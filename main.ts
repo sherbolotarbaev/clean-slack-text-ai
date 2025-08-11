@@ -1,5 +1,6 @@
 import { getBody, getData, request as openaiRequest } from './openai.ts'
 import {
+	deleteOriginalResponse,
 	replaceOriginalEphemeral,
 	respondEphemeral,
 	verifySlackSignature,
@@ -44,23 +45,19 @@ const handler = async (req: Request): Promise<Response> => {
 		const userText = form.get('text') || ''
 		const responseUrl = form.get('response_url') || ''
 
-		// Acknowledge immediately
-		const ack = new Response(
-			JSON.stringify({ response_type: 'ephemeral', text: 'Cleaning…' }),
-			{
-				headers: { 'Content-Type': 'application/json' },
-			}
-		)
-
+		// Immediately send an ephemeral via response_url so we can later replace it
+		await respondEphemeral(responseUrl, 'Cleaning…')
 		;(async () => {
 			const cleaned = userText ? await clearText(userText) : 'No text provided.'
-			const ok = await replaceOriginalEphemeral(responseUrl, cleaned)
-			if (!ok) {
+			const replaced = await replaceOriginalEphemeral(responseUrl, cleaned)
+			if (!replaced) {
+				await deleteOriginalResponse(responseUrl)
 				await respondEphemeral(responseUrl, cleaned)
 			}
 		})()
 
-		return ack
+		// Acknowledge the slash command quickly with empty 200 OK
+		return new Response('', { status: 200 })
 	}
 
 	return new Response('Not Found', { status: 404 })

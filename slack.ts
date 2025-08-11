@@ -98,3 +98,14 @@ export const replaceOriginalEphemeral = async (
 	})
 	return response.ok
 }
+
+export const deleteOriginalResponse = async (
+	responseUrl: string
+): Promise<boolean> => {
+	const response = await fetch(responseUrl, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ delete_original: true }),
+	})
+	return response.ok
+}
