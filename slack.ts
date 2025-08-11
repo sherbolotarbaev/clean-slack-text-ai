@@ -91,7 +91,6 @@ export const replaceOriginalEphemeral = async (
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
-			response_type: 'ephemeral',
 			replace_original: true,
 			text,
 		}),
