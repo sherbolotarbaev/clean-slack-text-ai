@@ -1,7 +1,7 @@
 import { getBody, getData, request as openaiRequest } from './openai.ts'
 import { respondEphemeral, verifySlackSignature } from './slack.ts'
 
-const clearText = async (text: string): Promise<string> => {
+const cleanText = async (text: string): Promise<string> => {
 	const response = await openaiRequest({
 		body: JSON.stringify(getBody(text)),
 	})
@@ -16,7 +16,7 @@ const parseFormBody = async (req: Request): Promise<URLSearchParams> => {
 const handler = async (req: Request): Promise<Response> => {
 	const url = new URL(req.url)
 
-	if (url.pathname === '/slack/clear' && req.method === 'POST') {
+	if (url.pathname === '/slack/clean' && req.method === 'POST') {
 		const isValid = await verifySlackSignature(req)
 		if (!isValid) return new Response('invalid signature', { status: 401 })
 
@@ -41,7 +41,7 @@ const handler = async (req: Request): Promise<Response> => {
 		const responseUrl = form.get('response_url') || ''
 
 		;(async () => {
-			const cleaned = userText ? await clearText(userText) : 'No text provided.'
+			const cleaned = userText ? await cleanText(userText) : 'No text provided.'
 			await respondEphemeral(responseUrl, cleaned)
 		})()
 

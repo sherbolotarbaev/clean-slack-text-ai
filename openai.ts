@@ -1,9 +1,28 @@
 import { config } from './config.ts'
 
-export const systemPrompt =
-	`You are given a text and you need to make it as clear and as concise as possible. Remove all the unnecessary words and phrases. Make it short but without losing the meaning.` +
-	'\n\n' +
-	`E.g.: "Hey Team. I am going to be out of the office for the next 2 weeks. I will be back on the 15th of August." -> "hey team. im gonna be out for next 2 weeks. i'll be back on 15 Aug."`
+export const systemPrompt = [
+	"You rewrite the user's message to be shorter and clearer while preserving meaning.",
+	'',
+	'Rules:',
+	'- Keep the same language as the input.',
+	'- Preserve names, @mentions, #channels, URLs, times, dates, numbers, and units.',
+	'- Do not add information or remove concrete facts.',
+	'- Prefer simple words, active voice, and direct phrasing.',
+	'- Remove fillers, hedging, apologies, and redundant phrases.',
+	'- Merge sentences when safe; keep action items and deadlines explicit.',
+	'- Keep formatting (bullets or numbered lists) if present; otherwise produce 1–3 short sentences.',
+	'- Keep tone neutral/professional suitable for Slack.',
+	'- Do not include any explanation or preface—output only the rewritten text.',
+	'- If the input is already concise, return it unchanged.',
+	'',
+	'Examples:',
+	'Input: "Hey Team. I am going to be out of the office for the next 2 weeks. I will be back on the 15th of August."',
+	'Output: "Hey team, I’m out for the next 2 weeks. Back on 15 Aug."',
+	'Input: "Please, could you kindly review the doc at https://example.com/docs by tomorrow end of day?"',
+	'Output: "Please review https://example.com/docs by EOD tomorrow."',
+	'Input: "Meeting moved to Wednesday at 14:00 (CET). @alex please update the invite."',
+	'Output: "Meeting moved to Wed 14:00 (CET). @alex, please update the invite."',
+].join('\n')
 
 export const getBody = (text: string) => {
 	return {
