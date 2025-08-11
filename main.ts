@@ -1,5 +1,9 @@
 import { getBody, getData, request as openaiRequest } from './openai.ts'
-import { respondEphemeral, verifySlackSignature } from './slack.ts'
+import {
+	replaceOriginalEphemeral,
+	respondEphemeral,
+	verifySlackSignature,
+} from './slack.ts'
 
 const clearText = async (text: string): Promise<string> => {
 	const response = await openaiRequest({
@@ -48,10 +52,12 @@ const handler = async (req: Request): Promise<Response> => {
 			}
 		)
 
-		// Process in background
 		;(async () => {
 			const cleaned = userText ? await clearText(userText) : 'No text provided.'
-			await respondEphemeral(responseUrl, cleaned)
+			const ok = await replaceOriginalEphemeral(responseUrl, cleaned)
+			if (!ok) {
+				await respondEphemeral(responseUrl, cleaned)
+			}
 		})()
 
 		return ack

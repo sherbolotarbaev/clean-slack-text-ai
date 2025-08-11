@@ -82,3 +82,19 @@ export const respondEphemeral = async (
 	})
 	return response.ok
 }
+
+export const replaceOriginalEphemeral = async (
+	responseUrl: string,
+	text: string
+): Promise<boolean> => {
+	const response = await fetch(responseUrl, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({
+			response_type: 'ephemeral',
+			replace_original: true,
+			text,
+		}),
+	})
+	return response.ok
+}
