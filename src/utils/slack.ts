@@ -1,28 +1,38 @@
-import { config } from './config.ts'
+import { config } from '../config.ts'
 
-export const verifySlackSignature = async (
-	request: Request
-): Promise<boolean> => {
-	const timestamp = request.headers.get('X-Slack-Request-Timestamp') || ''
-	const signature = request.headers.get('X-Slack-Signature') || ''
+const encoder = new TextEncoder()
+let cachedSigningKey: CryptoKey | null = null
 
-	if (!config.slack.signingSecret) return false
-
-	// Protect against replay attacks (5 min window)
-	const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 60 * 5
-	if (!timestamp || Number(timestamp) < fiveMinutesAgo) return false
-
-	const bodyText = await request.clone().text()
-	const basestring = `v0:${timestamp}:${bodyText}`
-
-	const encoder = new TextEncoder()
-	const key = await crypto.subtle.importKey(
+const getSigningKey = async (): Promise<CryptoKey | null> => {
+	if (!config.slack.signingSecret) return null
+	if (cachedSigningKey) return cachedSigningKey
+	cachedSigningKey = await crypto.subtle.importKey(
 		'raw',
 		encoder.encode(config.slack.signingSecret),
 		{ name: 'HMAC', hash: 'SHA-256' },
 		false,
 		['sign']
 	)
+	return cachedSigningKey
+}
+
+export const verifySlackSignature = async (
+	req: Request,
+	bodyTextOverride?: string
+): Promise<boolean> => {
+	const timestamp = req.headers.get('X-Slack-Request-Timestamp') || ''
+	const signature = req.headers.get('X-Slack-Signature') || ''
+
+	const key = await getSigningKey()
+	if (!key) return false
+
+	// Protect against replay attacks (5 min window)
+	const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 60 * 5
+	if (!timestamp || Number(timestamp) < fiveMinutesAgo) return false
+
+	const bodyText = bodyTextOverride ?? (await req.clone().text())
+	const basestring = `v0:${timestamp}:${bodyText}`
+
 	const signatureBytes = await crypto.subtle.sign(
 		'HMAC',
 		key,
@@ -33,10 +43,8 @@ export const verifySlackSignature = async (
 		.join('')
 	const computed = `v0=${hex}`
 
-	// Use constant-time compare
-	const enc = new TextEncoder()
-	const a = enc.encode(signature)
-	const b = enc.encode(computed)
+	const a = encoder.encode(signature)
+	const b = encoder.encode(computed)
 	if (a.length !== b.length) return false
 	let diff = 0
 	for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]

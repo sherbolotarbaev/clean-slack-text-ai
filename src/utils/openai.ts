@@ -1,4 +1,4 @@
-import { config } from './config.ts'
+import { config } from '../config.ts'
 
 export const systemPrompt = [
 	"You rewrite the user's message to be shorter and clearer while preserving meaning.",
@@ -53,17 +53,17 @@ export const request = ({
 	})
 }
 
-export const getData = async (
-	response: Response,
-	shutdownAfterError = true
-) => {
+export const getData = async (response: Response) => {
 	const data = await response.json()
 	if (!response.ok) {
-		if (shutdownAfterError) {
-			console.error(data.error.message)
-			Deno.exit(1)
-		}
 		return data.error.message || 'Unknown error.'
 	}
 	return data.choices[0].message.content || 'No content returned.'
+}
+
+export const cleanText = async (text: string): Promise<string> => {
+	const response = await request({
+		body: JSON.stringify(getBody(text)),
+	})
+	return getData(response)
 }
